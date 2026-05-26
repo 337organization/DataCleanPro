@@ -1,0 +1,74 @@
+﻿# DataCleanPro .gitignore
+
+# ==================== Maven 构建目录 ====================
+target/
+
+# ==================== IDE 文件 ====================
+# IntelliJ IDEA
+.idea/
+*.iml
+
+# Eclipse
+.classpath
+.project
+.settings/
+
+# VS Code
+.vscode/
+
+# 编辑器临时文件
+*.swp
+*.swo
+*~
+
+# ==================== 编译文件 ====================
+*.class
+*.jar
+*.war
+*.ear
+
+# ==================== 日志文件 ====================
+*.log
+storage/logs/
+
+# ==================== 运行时存储文件 ====================
+storage/uploads/
+storage/reports/
+storage/errors/
+
+# ==================== 临时文件 ====================
+*.tmp
+*.temp
+
+# ==================== 操作系统文件 ====================
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ==================== 数据库文件 ====================
+*.db
+*.sqlite
+
+# ==================== 配置文件（可能包含敏感信息） ====================
+application-local.properties
+
+# ==================== 其他 ====================
+# 编译输出
+build/
+out/
+
+# 依赖目录
+node_modules/
+
+# 环境变量文件
+.env
+.env.local
+
+# 证书和密钥文件
+*.pem
+*.key
+*.crt
