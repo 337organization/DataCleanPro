@@ -1,4 +1,4 @@
-﻿# DataCleanPro - 自动化数据处理与清洗系统
+# DataCleanPro - 自动化数据处理与清洗系统
 
 ## 项目简介
 
@@ -164,6 +164,36 @@ db.username=root
 db.password=root
 db.driver=com.mysql.cj.jdbc.Driver
 ```
+
+## 测试文件
+
+项目提供了多种测试文件，位于 `src/main/resources/test/` 目录：
+
+| 文件名 | 类型 | 说明 |
+|--------|------|------|
+| employees.csv | CSV | 员工数据，测试基本导入 |
+| customers.xlsx | Excel | 客户数据，测试Excel导入 |
+| products.csv | CSV | 产品数据，测试不同列结构 |
+| dirty_data.csv | CSV | 脏数据，测试格式清洗 |
+| empty_fields.csv | CSV | 空值数据，测试空值处理 |
+| duplicate_data.csv | CSV | 重复数据，测试去重功能 |
+| invalid_phone.csv | CSV | 错误手机号，测试验证 |
+| invalid_email.csv | CSV | 错误邮箱，测试验证 |
+| missing_required.csv | CSV | 缺少必填字段，测试验证 |
+| large_data.csv | CSV | 1000行数据，测试性能 |
+
+## 课程设计文档
+
+项目包含完整的课程设计文档：
+
+| 文档 | 说明 |
+|------|------|
+| 课程设计报告.docx | 完整的课程设计报告 |
+| 组员任务分工说明.docx | 4人团队任务分工 |
+| 组员报告-张三.docx | 项目组长/后端开发报告 |
+| 组员报告-李四.docx | 后端开发/数据库设计报告 |
+| 组员报告-王五.docx | 前端开发/GUI设计报告 |
+| 组员报告-赵六.docx | 测试/文档编写报告 |
 
 ## 使用说明
 
