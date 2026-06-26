@@ -81,7 +81,7 @@ set "MAVEN_DIR=%USERPROFILE%\.m2\wrapper\dists\apache-maven-3.9.6-bin\3311e1d4\a
 if not exist "%MAVEN_DIR%" mkdir "%MAVEN_DIR%" 2>nul
 
 echo Downloading Maven 3.9.6...
-powershell -Command "[Net.ServicePointManager]::SecurityProtocol='Tls12'; Invoke-WebRequest -Uri 'https://dlcdn.apache.org/maven/maven-3/3.9.6/binaries/apache-maven-3.9.6-bin.zip' -OutFile '%TEMP%\maven.zip'"
+powershell -Command "[Net.ServicePointManager]::SecurityProtocol='Tls12'; Invoke-WebRequest -Uri 'https://archive.apache.org/dist/maven/maven-3/3.9.6/binaries/apache-maven-3.9.6-bin.zip' -OutFile '%TEMP%\maven.zip'"
 
 if not exist "%TEMP%\maven.zip" (
     echo [X] Download failed. Please install Maven manually.
@@ -236,3 +236,4 @@ call "%MVN%" exec:java -Dexec.mainClass="com.datacleanpro.App"
 echo.
 echo Application closed.
 pause
+
