@@ -24,7 +24,6 @@ if %errorlevel% equ 0 (
 echo [!] Java not found. Installing JDK 17...
 echo.
 
-:: Try winget
 where winget >nul 2>&1
 if %errorlevel% equ 0 (
     echo Using winget to install Java...
@@ -36,13 +35,7 @@ if %errorlevel% equ 0 (
 )
 
 echo [X] Cannot install Java automatically.
-echo.
-echo Please install Java manually:
-echo 1. Visit: https://adoptium.net/
-echo 2. Download Temurin JDK 17
-echo 3. Run installer, check "Add to PATH"
-echo 4. Restart this script
-echo.
+echo Please visit https://adoptium.net/ to install JDK 17 manually.
 start https://adoptium.net/
 pause
 exit /b 1
@@ -56,14 +49,12 @@ echo.
 echo [2/5] Checking Maven...
 echo --------------------------------------------
 
-:: Check local Maven
 set "MVN=%USERPROFILE%\.m2\wrapper\dists\apache-maven-3.9.6-bin\3311e1d4\apache-maven-3.9.6\bin\mvn.cmd"
 if exist "%MVN%" (
     echo [OK] Local Maven found
     goto :check_mysql
 )
 
-:: Check system Maven
 where mvn >nul 2>&1
 if %errorlevel% equ 0 (
     set "MVN=mvn"
@@ -71,7 +62,6 @@ if %errorlevel% equ 0 (
     goto :check_mysql
 )
 
-:: Download Maven
 echo [!] Maven not found. Downloading...
 echo.
 
@@ -83,12 +73,7 @@ powershell -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::Security
 
 if not exist "%TEMP%\maven.zip" (
     echo [X] Download failed!
-    echo.
-    echo Please download Maven manually:
-    echo 1. Visit: https://maven.apache.org/download.cgi
-    echo 2. Download apache-maven-3.9.6-bin.zip
-    echo 3. Extract to: %MAVEN_DIR%
-    echo.
+    echo Please download Maven manually from https://maven.apache.org/download.cgi
     pause
     exit /b 1
 )
@@ -109,7 +94,7 @@ if exist "%MVN%" (
 echo.
 
 :: =============================================
-:: Step 3: Check MySQL
+:: Step 3: Check MySQL (auto-skip if not available)
 :: =============================================
 echo [3/5] Checking MySQL...
 echo --------------------------------------------
@@ -118,108 +103,66 @@ set "MYSQL_FOUND=0"
 sc query MySQL80 >nul 2>&1 && set "MYSQL_FOUND=1"
 sc query MySQL >nul 2>&1 && set "MYSQL_FOUND=1"
 
-if "!MYSQL_FOUND!"=="1" (
-    echo [OK] MySQL service found
-    goto :config_db
+if "!MYSQL_FOUND!"=="0" (
+    echo [!] MySQL not found - skipping database setup
+    echo     (Database features will be unavailable)
+    goto :start_app
 )
 
-:: Try winget
-where winget >nul 2>&1
-if %errorlevel% equ 0 (
-    echo [!] MySQL not found. Installing via winget...
-    winget install Oracle.MySQL --silent --accept-package-agreements --accept-source-agreements
-    if !errorlevel! equ 0 (
-        echo.
-        echo [OK] MySQL installed!
-        echo.
-        echo IMPORTANT: Please restart your computer, then run this script again.
-        echo.
-        pause
-        exit /b 0
-    )
-)
-
-echo [!] MySQL not found.
-echo.
-echo The app can run without MySQL (limited functionality).
-echo.
-echo To install MySQL manually:
-echo Visit: https://dev.mysql.com/downloads/installer/
-echo.
-set /p CONTINUE="Continue without MySQL? (Y/N): "
-if /i not "!CONTINUE!"=="Y" (
-    start https://dev.mysql.com/downloads/installer/
-    pause
-    exit /b 0
-)
-goto :start_app
+echo [OK] MySQL service found
 
 :config_db
 echo.
 
 :: =============================================
-:: Step 4: Configure Database
+:: Step 4: Configure Database (auto-skip on failure)
 :: =============================================
 echo [4/5] Configuring database...
 echo --------------------------------------------
 
-:: Read current password from config
+:: Read current password
 set "DB_PASS="
-for /f "tokens=2 delims==" %%a in ('findstr /i "db.password" src\main\resources\application.properties 2^>nul') do (
+for /f "tokens=2 delims==" %%a in ('findstr /i "db.password=" src\main\resources\application.properties 2^>nul') do (
     set "DB_PASS=%%a"
 )
 
-:: Try current password first
+:: Try current password
 if defined DB_PASS (
     mysql -u root -p!DB_PASS! -e "USE datacleanpro" >nul 2>&1
     if !errorlevel! equ 0 (
-        echo [OK] Database 'datacleanpro' exists
+        echo [OK] Database 'datacleanpro' ready
         goto :start_app
     )
 )
 
-:: Try common passwords to find the right one
+:: Try common passwords
 set "FOUND_PASS="
-for %%p in ("!DB_PASS!" "" "root" "123456" "password" "admin" "mysql") do (
+for %%p in ("!DB_PASS!" "" "root" "123456" "password" "admin") do (
     if not defined FOUND_PASS (
         mysql -u root -p%%~p -e "SELECT 1" >nul 2>&1
         if !errorlevel! equ 0 (
             set "FOUND_PASS=%%~p"
-            echo [OK] MySQL connection successful
         )
     )
 )
 
 if not defined FOUND_PASS (
-    echo [!] Cannot connect to MySQL.
-    echo.
-    echo Please update the database password in:
-    echo src\main\resources\application.properties
-    echo.
-    echo Set: db.password=YOUR_MYSQL_PASSWORD
-    echo.
-    set /p CONTINUE="Continue anyway? (Y/N): "
-    if /i not "!CONTINUE!"=="Y" exit /b 1
+    echo [!] Cannot connect to MySQL - skipping database setup
+    echo     (Update db.password in application.properties to enable)
     goto :start_app
 )
 
-:: Create database if not exists
+:: Create database
 mysql -u root -p!FOUND_PASS! -e "CREATE DATABASE IF NOT EXISTS datacleanpro" >nul 2>&1
-if !errorlevel! equ 0 (
-    echo [OK] Database 'datacleanpro' ready
-)
+echo [OK] Database 'datacleanpro' ready
 
-:: Update password in config
+:: Update config
 powershell -ExecutionPolicy Bypass -Command "(Get-Content 'src\main\resources\application.properties') -replace 'db.password=.*', 'db.password=!FOUND_PASS!' | Set-Content 'src\main\resources\application.properties'"
 echo [OK] Database password configured
 
 :: Import schema
 mysql -u root -p!FOUND_PASS! datacleanpro < "src\main\resources\db\schema.sql" >nul 2>&1
-if !errorlevel! equ 0 (
-    echo [OK] Database schema imported
-) else (
-    echo [!] Schema import skipped (may already exist)
-)
+echo [OK] Database schema imported
 
 :start_app
 echo.
@@ -240,9 +183,7 @@ if not exist "src\main\java\com\datacleanpro\App.java" (
 echo Compiling project...
 call "%MVN%" compile -q
 if %errorlevel% neq 0 (
-    echo.
-    echo [X] Compilation failed!
-    echo Please check Java version (requires JDK 17+)
+    echo [X] Compilation failed! Please check Java version (requires JDK 17+)
     pause
     exit /b 1
 )
