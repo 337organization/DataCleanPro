@@ -1,4 +1,4 @@
-﻿package com.datacleanpro.model;
+package com.datacleanpro.model;
 
 /**
  * 统计结果模型类

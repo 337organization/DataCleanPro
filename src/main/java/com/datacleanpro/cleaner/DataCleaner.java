@@ -1,4 +1,4 @@
-﻿package com.datacleanpro.cleaner;
+package com.datacleanpro.cleaner;
 
 import com.datacleanpro.model.DataRow;
 

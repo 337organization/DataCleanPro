@@ -1,4 +1,4 @@
-﻿package com.datacleanpro.dao;
+package com.datacleanpro.dao;
 
 import com.datacleanpro.exception.DatabaseImportException;
 import com.datacleanpro.util.ConfigUtil;

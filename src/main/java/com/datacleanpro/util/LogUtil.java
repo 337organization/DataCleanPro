@@ -1,4 +1,4 @@
-﻿package com.datacleanpro.util;
+package com.datacleanpro.util;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,6 +69,15 @@ public class LogUtil {
      */
     public static void warn(Class<?> clazz, String message) {
         LoggerFactory.getLogger(clazz).warn(message);
+    }
+
+    /**
+     * 记录警告日志
+     * @param message 日志消息
+     * @param throwable 异常
+     */
+    public static void warn(String message, Throwable throwable) {
+        logger.warn(message, throwable);
     }
 
     /**

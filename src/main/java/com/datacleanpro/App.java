@@ -1,4 +1,4 @@
-﻿package com.datacleanpro;
+package com.datacleanpro;
 
 import com.datacleanpro.dao.DBConnection;
 import com.datacleanpro.network.Server;
@@ -21,7 +21,11 @@ public class App {
         try {
             // 1. 初始化数据库连接
             LogUtil.info("初始化数据库连接...");
-            DBConnection.initialize();
+            try {
+                DBConnection.initialize();
+            } catch (Exception dbEx) {
+                LogUtil.warn("数据库连接失败，部分功能将不可用: " + dbEx.getMessage());
+            }
             
             // 2. 启动服务器（后台线程）
             LogUtil.info("启动服务器...");

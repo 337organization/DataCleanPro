@@ -1,4 +1,4 @@
-﻿package com.datacleanpro.network;
+package com.datacleanpro.network;
 
 import com.datacleanpro.util.ConfigUtil;
 import com.datacleanpro.util.LogUtil;

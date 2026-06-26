@@ -1,4 +1,4 @@
-﻿package com.datacleanpro.view;
+package com.datacleanpro.view;
 
 import com.datacleanpro.util.LogUtil;
 

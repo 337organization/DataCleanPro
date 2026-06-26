@@ -1,4 +1,4 @@
-﻿package com.datacleanpro.model;
+package com.datacleanpro.model;
 
 import java.time.LocalDateTime;
 

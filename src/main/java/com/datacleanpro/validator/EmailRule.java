@@ -1,4 +1,4 @@
-﻿package com.datacleanpro.validator;
+package com.datacleanpro.validator;
 
 import com.datacleanpro.util.StringUtil;
 

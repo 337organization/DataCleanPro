@@ -1,4 +1,4 @@
-﻿package com.datacleanpro.network;
+package com.datacleanpro.network;
 
 import java.io.Serializable;
 

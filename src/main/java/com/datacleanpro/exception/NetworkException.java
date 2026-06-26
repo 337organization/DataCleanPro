@@ -1,4 +1,4 @@
-﻿package com.datacleanpro.exception;
+package com.datacleanpro.exception;
 
 /**
  * 网络异常类

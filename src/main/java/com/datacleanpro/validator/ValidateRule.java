@@ -1,4 +1,4 @@
-﻿package com.datacleanpro.validator;
+package com.datacleanpro.validator;
 
 /**
  * 验证规则接口

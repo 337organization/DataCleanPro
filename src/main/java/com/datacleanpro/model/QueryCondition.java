@@ -1,4 +1,4 @@
-﻿package com.datacleanpro.model;
+package com.datacleanpro.model;
 
 import java.util.List;
 import java.util.ArrayList;

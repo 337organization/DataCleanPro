@@ -1,4 +1,4 @@
-﻿package com.datacleanpro.service;
+package com.datacleanpro.service;
 
 import com.datacleanpro.dao.DataRowDAO;
 import com.datacleanpro.dao.ValidationResultDAO;

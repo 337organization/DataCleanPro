@@ -1,4 +1,4 @@
-﻿package com.datacleanpro.parser;
+package com.datacleanpro.parser;
 
 import com.datacleanpro.exception.FileFormatException;
 import com.datacleanpro.util.FileUtil;

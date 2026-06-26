@@ -1,4 +1,4 @@
-﻿package com.datacleanpro.util;
+package com.datacleanpro.util;
 
 /**
  * 字符串工具类

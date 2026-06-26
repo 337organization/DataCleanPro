@@ -1,4 +1,4 @@
-﻿package com.datacleanpro.view;
+package com.datacleanpro.view;
 
 import javax.swing.*;
 import java.awt.*;

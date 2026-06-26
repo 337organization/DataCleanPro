@@ -1,4 +1,4 @@
-﻿package com.datacleanpro.network;
+package com.datacleanpro.network;
 
 import com.datacleanpro.exception.NetworkException;
 import com.datacleanpro.util.ConfigUtil;

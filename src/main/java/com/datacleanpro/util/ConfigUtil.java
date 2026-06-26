@@ -1,4 +1,4 @@
-﻿package com.datacleanpro.util;
+package com.datacleanpro.util;
 
 import java.io.IOException;
 import java.io.InputStream;
