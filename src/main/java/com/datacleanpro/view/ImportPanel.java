@@ -3,12 +3,15 @@ package com.datacleanpro.view;
 import com.datacleanpro.service.DataImportService;
 import com.datacleanpro.model.DataFile;
 import com.datacleanpro.model.DataRow;
+import com.datacleanpro.parser.FileParser;
+import com.datacleanpro.util.FileUtil;
 import com.datacleanpro.util.LogUtil;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -110,23 +113,44 @@ public class ImportPanel extends JPanel {
         }
         
         // 使用SwingWorker在后台执行导入
-        SwingWorker<DataFile, Void> worker = new SwingWorker<>() {
+        SwingWorker<ImportResult, Void> worker = new SwingWorker<>() {
             @Override
-            protected DataFile doInBackground() throws Exception {
-                return importService.importFile(selectedFile);
+            protected ImportResult doInBackground() throws Exception {
+                try {
+                    DataFile dataFile = importService.importFile(selectedFile);
+                    List<DataRow> rows = importService.getFileData(dataFile.getId(), 1, 100);
+                    return new ImportResult(dataFile, rows, true, null);
+                } catch (Exception dbEx) {
+                    // 数据库不可用时，降级为仅解析预览，避免基础导入流程被 MySQL 配置卡住。
+                    LogUtil.warn("数据库导入失败，尝试仅解析文件用于预览", dbEx);
+                    FileParser.ParseResult parseResult = importService.parseFileOnly(selectedFile);
+                    DataFile previewFile = createPreviewDataFile(selectedFile, parseResult);
+                    return new ImportResult(previewFile, parseResult.getRows(), false, dbEx.getMessage());
+                }
             }
             
             @Override
             protected void done() {
                 try {
-                    DataFile dataFile = get();
-                    if (dataFile != null) {
-                        fileInfoLabel.setText("导入成功: " + dataFile.getFileName() + 
+                    ImportResult result = get();
+                    if (result != null && result.dataFile != null) {
+                        DataFile dataFile = result.dataFile;
+                        String modeText = result.savedToDatabase ? "导入成功" : "预览成功";
+                        fileInfoLabel.setText(modeText + ": " + dataFile.getFileName() +
                                             " (" + dataFile.getRowCount() + " 行)");
                         cleanButton.setEnabled(true);
-                        loadDataPreview(dataFile.getId());
-                        JOptionPane.showMessageDialog(ImportPanel.this, 
-                            "文件导入成功！", "成功", JOptionPane.INFORMATION_MESSAGE);
+                        updateTable(result.rows);
+
+                        if (result.savedToDatabase) {
+                            JOptionPane.showMessageDialog(ImportPanel.this,
+                                "文件导入成功！", "成功", JOptionPane.INFORMATION_MESSAGE);
+                        } else {
+                            JOptionPane.showMessageDialog(ImportPanel.this,
+                                "文件已解析并显示预览，但未保存到数据库。\n" +
+                                "如需使用历史记录、查询等功能，请先配置并启动 MySQL。\n\n" +
+                                "数据库错误: " + result.warningMessage,
+                                "预览模式", JOptionPane.WARNING_MESSAGE);
+                        }
                     }
                 } catch (Exception e) {
                     LogUtil.error("文件导入失败", e);
@@ -180,25 +204,83 @@ public class ImportPanel extends JPanel {
         // 清空表格
         tableModel.setRowCount(0);
         
-        if (rows.isEmpty()) {
+        if (rows == null || rows.isEmpty()) {
             return;
         }
         
-        // 更新列名
-        DataRow firstRow = rows.get(0);
-        if (firstRow.getFields() != null) {
-            String[] columns = new String[firstRow.getFields().size()];
-            for (int i = 0; i < firstRow.getFields().size(); i++) {
-                columns[i] = "列 " + (i + 1);
+        // 根据预览数据中最长的一行生成列名
+        int maxColumnCount = 0;
+        for (DataRow row : rows) {
+            if (row.getFields() != null) {
+                maxColumnCount = Math.max(maxColumnCount, row.getFields().size());
             }
-            tableModel.setColumnIdentifiers(columns);
         }
+
+        String[] columns = new String[maxColumnCount];
+        for (int i = 0; i < maxColumnCount; i++) {
+            columns[i] = "列 " + (i + 1);
+        }
+        tableModel.setColumnIdentifiers(columns);
         
         // 添加数据
         for (DataRow row : rows) {
             if (row.getFields() != null) {
                 tableModel.addRow(row.getFields().toArray());
             }
+        }
+    }
+
+    /**
+     * 创建仅用于界面预览的文件信息
+     * @param file 源文件
+     * @param parseResult 解析结果
+     * @return 文件信息
+     */
+    private DataFile createPreviewDataFile(File file, FileParser.ParseResult parseResult) {
+        DataFile dataFile = new DataFile();
+        dataFile.setFileName(file.getName());
+        dataFile.setFilePath(file.getAbsolutePath());
+        dataFile.setFileType(FileUtil.getFileExtension(file));
+        dataFile.setRowCount(parseResult.getRowCount());
+        dataFile.setColumnCount(getMaxColumnCount(parseResult.getRows()));
+        dataFile.setStatus("PREVIEW_ONLY");
+        dataFile.setDescription("数据库不可用，仅解析预览，未保存");
+        return dataFile;
+    }
+
+    /**
+     * 获取预览数据最大列数
+     * @param rows 数据行
+     * @return 最大列数
+     */
+    private int getMaxColumnCount(List<DataRow> rows) {
+        int maxColumnCount = 0;
+        if (rows == null) {
+            return maxColumnCount;
+        }
+
+        for (DataRow row : rows) {
+            if (row.getFields() != null) {
+                maxColumnCount = Math.max(maxColumnCount, row.getFields().size());
+            }
+        }
+        return maxColumnCount;
+    }
+
+    /**
+     * 导入结果，兼容数据库保存模式和纯预览模式
+     */
+    private static class ImportResult {
+        private final DataFile dataFile;
+        private final List<DataRow> rows;
+        private final boolean savedToDatabase;
+        private final String warningMessage;
+
+        private ImportResult(DataFile dataFile, List<DataRow> rows, boolean savedToDatabase, String warningMessage) {
+            this.dataFile = dataFile;
+            this.rows = rows != null ? rows : new ArrayList<>();
+            this.savedToDatabase = savedToDatabase;
+            this.warningMessage = warningMessage;
         }
     }
 }

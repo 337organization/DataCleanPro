@@ -24,6 +24,27 @@ import java.util.List;
  * 处理文件导入、解析、清洗和存储
  */
 public class DataImportService {
+
+    /**
+     * 仅解析文件，不写入数据库
+     * @param file 文件
+     * @return 文件解析结果
+     */
+    public FileParser.ParseResult parseFileOnly(File file) {
+        LogUtil.info("仅解析文件用于预览: " + file.getName());
+
+        if (!FileUtil.isAllowedFileType(file)) {
+            throw new FileFormatException("不支持的文件类型", file.getAbsolutePath(),
+                                        "xlsx, xls, csv", FileUtil.getFileExtension(file));
+        }
+
+        FileParser.ParseResult parseResult = ParserFactory.parseFile(file);
+        if (!parseResult.isSuccess()) {
+            throw new FileFormatException(parseResult.getMessage());
+        }
+
+        return parseResult;
+    }
     
     /**
      * 导入文件
@@ -42,10 +63,7 @@ public class DataImportService {
             }
             
             // 2. 解析文件
-            FileParser.ParseResult parseResult = ParserFactory.parseFile(file);
-            if (!parseResult.isSuccess()) {
-                throw new FileFormatException(parseResult.getMessage());
-            }
+            FileParser.ParseResult parseResult = parseFileOnly(file);
             
             // 3. 保存文件元数据
             DataFile dataFile = new DataFile();
