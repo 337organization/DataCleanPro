@@ -2,6 +2,9 @@ package com.datacleanpro.service;
 
 import com.datacleanpro.cleaner.CleanPipeline;
 import com.datacleanpro.cleaner.DataCleaner;
+import com.datacleanpro.cleaner.DuplicateCleaner;
+import com.datacleanpro.cleaner.EmptyValueCleaner;
+import com.datacleanpro.cleaner.FormatCleaner;
 import com.datacleanpro.dao.DataFileDAO;
 import com.datacleanpro.dao.DataRowDAO;
 import com.datacleanpro.exception.DataCleanException;
@@ -108,8 +111,46 @@ public class DataImportService {
      * @return 清洗结果
      */
     public DataCleaner.CleanResult cleanData(Long fileId) {
+        return cleanData(fileId, CleanPipeline.createDefault(), "所有清洗");
+    }
+
+    /**
+     * 去除重复数据
+     * @param fileId 文件ID
+     * @return 清洗结果
+     */
+    public DataCleaner.CleanResult cleanDuplicates(Long fileId) {
+        return cleanData(fileId, new CleanPipeline().addCleaner(new DuplicateCleaner()), "去除重复数据");
+    }
+
+    /**
+     * 处理空值
+     * @param fileId 文件ID
+     * @return 清洗结果
+     */
+    public DataCleaner.CleanResult cleanEmptyValues(Long fileId) {
+        return cleanData(fileId, new CleanPipeline().addCleaner(new EmptyValueCleaner()), "处理空值");
+    }
+
+    /**
+     * 格式化数据
+     * @param fileId 文件ID
+     * @return 清洗结果
+     */
+    public DataCleaner.CleanResult cleanFormat(Long fileId) {
+        return cleanData(fileId, new CleanPipeline().addCleaner(new FormatCleaner()), "格式化数据");
+    }
+
+    /**
+     * 按指定管道清洗数据
+     * @param fileId 文件ID
+     * @param pipeline 清洗管道
+     * @param actionName 操作名称
+     * @return 清洗结果
+     */
+    private DataCleaner.CleanResult cleanData(Long fileId, CleanPipeline pipeline, String actionName) {
         LocalDateTime startTime = DateUtil.now();
-        LogUtil.info("开始清洗数据，文件ID: " + fileId);
+        LogUtil.info("开始清洗数据，文件ID: " + fileId + ", 操作: " + actionName);
         
         try {
             // 1. 获取数据
@@ -119,7 +160,6 @@ public class DataImportService {
             }
             
             // 2. 执行清洗管道
-            CleanPipeline pipeline = CleanPipeline.createDefault();
             DataCleaner.CleanResult result = pipeline.execute(rows);
             
             // 3. 更新数据
@@ -143,7 +183,7 @@ public class DataImportService {
             history.setExecutionTime(DateUtil.betweenMillis(startTime, DateUtil.now()));
             TaskHistoryService.recordHistory(history);
             
-            LogUtil.info("数据清洗完成，文件ID: " + fileId + ", 结果: " + result);
+            LogUtil.info("数据清洗完成，文件ID: " + fileId + ", 操作: " + actionName + ", 结果: " + result);
             return result;
             
         } catch (Exception e) {

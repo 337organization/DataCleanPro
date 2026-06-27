@@ -1,6 +1,7 @@
 package com.datacleanpro.view;
 
 import com.datacleanpro.service.DataImportService;
+import com.datacleanpro.cleaner.DataCleaner;
 import com.datacleanpro.model.DataFile;
 import com.datacleanpro.model.DataRow;
 import com.datacleanpro.parser.FileParser;
@@ -28,6 +29,7 @@ public class ImportPanel extends JPanel {
     private JLabel fileInfoLabel;
     private JFileChooser fileChooser;
     private File selectedFile;
+    private DataFile currentDataFile;
     private DataImportService importService;
     
     public ImportPanel() {
@@ -135,6 +137,7 @@ public class ImportPanel extends JPanel {
                     ImportResult result = get();
                     if (result != null && result.dataFile != null) {
                         DataFile dataFile = result.dataFile;
+                        currentDataFile = dataFile;
                         String modeText = result.savedToDatabase ? "导入成功" : "预览成功";
                         fileInfoLabel.setText(modeText + ": " + dataFile.getFileName() +
                                             " (" + dataFile.getRowCount() + " 行)");
@@ -167,8 +170,36 @@ public class ImportPanel extends JPanel {
      * 清洗数据
      */
     private void cleanData() {
-        // TODO: 实现数据清洗
-        JOptionPane.showMessageDialog(this, "数据清洗功能即将实现", "提示", JOptionPane.INFORMATION_MESSAGE);
+        if (currentDataFile == null || currentDataFile.getId() == null) {
+            JOptionPane.showMessageDialog(this, "请先导入并保存文件", "提示", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        SwingWorker<DataCleaner.CleanResult, Void> worker = new SwingWorker<>() {
+            @Override
+            protected DataCleaner.CleanResult doInBackground() {
+                return importService.cleanData(currentDataFile.getId());
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    DataCleaner.CleanResult result = get();
+                    loadDataPreview(currentDataFile.getId());
+                    JOptionPane.showMessageDialog(ImportPanel.this,
+                            "数据清洗完成！\n" +
+                            "总行数: " + result.getTotalRows() + "\n" +
+                            "影响行数: " + result.getAffectedRows() + "\n" +
+                            "删除行数: " + result.getRemovedRows(),
+                            "成功", JOptionPane.INFORMATION_MESSAGE);
+                } catch (Exception e) {
+                    LogUtil.error("数据清洗失败", e);
+                    JOptionPane.showMessageDialog(ImportPanel.this,
+                            "数据清洗失败: " + e.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        };
+        worker.execute();
     }
     
     /**

@@ -11,6 +11,7 @@ import com.datacleanpro.validator.ValidateRule;
 import com.datacleanpro.validator.ValidationEngine;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -90,19 +91,37 @@ public class ValidationService {
                 return new ArrayList<>();
             }
             
-            // 3. 转换规则
-            List<ValidateRule> validateRules = new ArrayList<>();
+            // 3. 转换并执行规则
+            List<ValidationResult> results = new ArrayList<>();
             for (ValidationRule rule : rules) {
-                ValidateRule validateRule = ValidationEngine.createRule(rule.getRuleType());
-                if (validateRule != null) {
-                    validateRules.add(validateRule);
+                ValidateRule validateRule = createValidateRule(rule);
+                if (validateRule == null) {
+                    continue;
+                }
+
+                for (DataRow row : rows) {
+                    if (row.getFields() == null) {
+                        continue;
+                    }
+                    for (int i = 0; i < row.getFields().size(); i++) {
+                        String value = row.getFields().get(i);
+                        boolean passed = validateRule.validate(value);
+                        ValidationResult result = new ValidationResult();
+                        result.setFileId(fileId);
+                        result.setRuleId(rule.getId());
+                        result.setRowIndex(row.getRowIndex());
+                        result.setColumnName("列 " + (i + 1));
+                        result.setCellValue(value);
+                        result.setPassed(passed);
+                        if (!passed) {
+                            result.setErrorMessage(validateRule.getErrorMessage());
+                        }
+                        results.add(result);
+                    }
                 }
             }
-            
-            // 4. 执行验证
-            List<ValidationResult> results = ValidationEngine.validateData(validateRules, rows, fileId);
-            
-            // 5. 保存结果
+
+            // 4. 保存结果
             if (!results.isEmpty()) {
                 ValidationResultDAO.deleteByFileId(fileId);
                 ValidationResultDAO.batchInsert(results);
@@ -153,5 +172,26 @@ public class ValidationService {
         stats.put("passRate", totalResults > 0 ? (double) passedResults / totalResults * 100 : 0);
         
         return stats;
+    }
+
+    /**
+     * 根据规则配置创建验证器
+     * @param rule 验证规则配置
+     * @return 验证器
+     */
+    private static ValidateRule createValidateRule(ValidationRule rule) {
+        Map<String, String> params = new HashMap<>();
+        if (rule.getErrorMessage() != null) {
+            params.put("errorMessage", rule.getErrorMessage());
+        }
+        if (rule.getExpression() != null) {
+            params.put("regex", rule.getExpression());
+            String[] range = rule.getExpression().split("-");
+            if (range.length == 2) {
+                params.put("min", range[0]);
+                params.put("max", range[1]);
+            }
+        }
+        return ValidationEngine.createRule(rule.getRuleType(), params);
     }
 }
