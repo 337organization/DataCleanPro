@@ -11,12 +11,13 @@ set "MAVEN_BASE=%USERPROFILE%\.m2\wrapper\dists\apache-maven-%MAVEN_VERSION%-bin
 set "MAVEN_DIR=%MAVEN_BASE%\apache-maven-%MAVEN_VERSION%"
 set "MAVEN_URL=https://archive.apache.org/dist/maven/maven-3/%MAVEN_VERSION%/binaries/apache-maven-%MAVEN_VERSION%-bin.zip"
 set "APP_MAIN=com.datacleanpro.App"
-set "VERSION=1.1.0"
+set "VERSION=1.2.2"
 
 if /i "%~1"=="--help" goto show_help
 if /i "%~1"=="--stop" goto stop_services
 if /i "%~1"=="--uninstall" goto uninstall
 if /i "%~1"=="--version" goto show_version
+if /i "%~1"=="--check-java" goto check_java_only
 
 call :write_log "DataCleanPro Startup Script v%VERSION%"
 
@@ -35,16 +36,18 @@ if not "%NETWORK_OK%"=="1" echo [WARN] Offline mode
 echo.
 
 echo [1/6] Checking Java...
-set "JAVA_MAJOR="
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$v = & java -version 2>&1 | Select-String 'version'; if ($LASTEXITCODE -ne 0 -or -not $v) { exit 1 }; $m = [regex]::Match($v.ToString(), '\"(?<ver>\d+)(?:\.(?<minor>\d+))?'); if (-not $m.Success) { exit 1 }; $major = [int]$m.Groups['ver'].Value; if ($major -eq 1) { $major = [int]$m.Groups['minor'].Value }; Write-Output $major" > "%TEMP%\datacleanpro_java_version.txt"
-if "%errorlevel%"=="0" for /f %%v in (%TEMP%\datacleanpro_java_version.txt) do set "JAVA_MAJOR=%%v"
-del "%TEMP%\datacleanpro_java_version.txt" >nul 2>&1
+call :detect_java
+if not defined JAVA_EXE goto install_java
 if not defined JAVA_MAJOR goto install_java
 if !JAVA_MAJOR! GEQ %JAVA_MIN_VERSION% goto java_ok
+echo [WARN] Found Java !JAVA_MAJOR!, but Java %JAVA_MIN_VERSION%+ is required.
 goto install_java
 
 :java_ok
-echo [OK] Java major version !JAVA_MAJOR!
+echo [OK] Java !JAVA_MAJOR! found: !JAVA_EXE!
+if defined JAVA_HOME (
+    set "PATH=!JAVA_HOME!\bin;!PATH!"
+)
 goto check_maven
 
 :install_java
@@ -53,7 +56,7 @@ echo [WARN] Java %JAVA_MIN_VERSION%+ was not found. Trying winget install...
 where winget >nul 2>&1
 if not "%errorlevel%"=="0" goto java_install_failed
 winget install EclipseAdoptium.Temurin.17.JDK --silent --accept-package-agreements --accept-source-agreements
-if "%errorlevel%"=="0" goto java_installed
+if "%errorlevel%"=="0" goto java_after_install
 goto java_install_failed
 
 :java_missing_offline
@@ -62,7 +65,18 @@ pause
 exit /b 1
 
 :java_installed
-echo [OK] Java installed. Please reopen this terminal and run the script again.
+echo [OK] Java installed and detected.
+goto check_maven
+
+:java_after_install
+call :detect_java
+if not defined JAVA_EXE goto java_install_needs_restart
+if not defined JAVA_MAJOR goto java_install_needs_restart
+if !JAVA_MAJOR! GEQ %JAVA_MIN_VERSION% goto java_installed
+
+:java_install_needs_restart
+echo [WARN] Java is installed, but java.exe is not available in this terminal yet.
+echo        Reopen the terminal or restart Windows, then run start.bat again.
 pause
 exit /b 0
 
@@ -140,7 +154,7 @@ if not "%errorlevel%"=="0" goto db_schema_failed
 
 set "SCHEMA_EXISTS=0"
 mysql -u root -p!DB_PASS! -N -B -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='datacleanpro' AND table_name='data_file'" > "%TEMP%\datacleanpro_schema_check.txt" 2>nul
-if "%errorlevel%"=="0" for /f %%v in (%TEMP%\datacleanpro_schema_check.txt) do set "SCHEMA_EXISTS=%%v"
+if "%errorlevel%"=="0" for /f "usebackq" %%v in ("%TEMP%\datacleanpro_schema_check.txt") do set "SCHEMA_EXISTS=%%v"
 del "%TEMP%\datacleanpro_schema_check.txt" >nul 2>&1
 
 if "%SCHEMA_EXISTS%"=="0" goto import_schema
@@ -236,3 +250,63 @@ exit /b 0
 :write_log
 echo [%date% %time%] %~1>> startup.log
 exit /b 0
+
+:detect_java
+set "ORIGINAL_JAVA_HOME=%JAVA_HOME%"
+set "JAVA_EXE="
+set "JAVA_MAJOR="
+set "JAVA_HOME="
+
+for /f "tokens=*" %%j in ('where java.exe 2^>nul') do call :check_java_candidate "%%j"
+if defined JAVA_EXE exit /b 0
+
+if not defined ORIGINAL_JAVA_HOME goto detect_java_program_files
+if exist "%ORIGINAL_JAVA_HOME%\bin\java.exe" call :check_java_candidate "%ORIGINAL_JAVA_HOME%\bin\java.exe"
+if defined JAVA_EXE exit /b 0
+
+:detect_java_program_files
+for /d %%j in ("%ProgramFiles%\Eclipse Adoptium\jdk-*") do if exist "%%~fj\bin\java.exe" call :check_java_candidate "%%~fj\bin\java.exe"
+if defined JAVA_EXE exit /b 0
+
+for /d %%j in ("%ProgramFiles%\Java\jdk-*") do if exist "%%~fj\bin\java.exe" call :check_java_candidate "%%~fj\bin\java.exe"
+if defined JAVA_EXE exit /b 0
+
+for /d %%j in ("%ProgramFiles%\Microsoft\jdk-*") do if exist "%%~fj\bin\java.exe" call :check_java_candidate "%%~fj\bin\java.exe"
+exit /b 0
+
+:check_java_candidate
+if defined JAVA_EXE exit /b 0
+set "CANDIDATE_JAVA=%~1"
+if not exist "!CANDIDATE_JAVA!" exit /b 0
+set "CANDIDATE_MAJOR="
+set "CANDIDATE_VERSION="
+set "JAVA_VERSION_FILE=%TEMP%\datacleanpro_java_version.txt"
+del "!JAVA_VERSION_FILE!" >nul 2>&1
+"!CANDIDATE_JAVA!" -version > "!JAVA_VERSION_FILE!" 2>&1
+if errorlevel 1 exit /b 0
+for /f "tokens=3" %%v in ('findstr /i "version" "!JAVA_VERSION_FILE!" 2^>nul') do if not defined CANDIDATE_VERSION set "CANDIDATE_VERSION=%%v"
+del "!JAVA_VERSION_FILE!" >nul 2>&1
+if not defined CANDIDATE_VERSION exit /b 0
+set "CANDIDATE_VERSION=!CANDIDATE_VERSION:"=!"
+for /f "tokens=1,2 delims=." %%a in ("!CANDIDATE_VERSION!") do (
+    set "CANDIDATE_MAJOR=%%a"
+    if "%%a"=="1" set "CANDIDATE_MAJOR=%%b"
+)
+if not defined CANDIDATE_MAJOR exit /b 0
+if !CANDIDATE_MAJOR! LSS %JAVA_MIN_VERSION% exit /b 0
+set "JAVA_EXE=!CANDIDATE_JAVA!"
+set "JAVA_MAJOR=!CANDIDATE_MAJOR!"
+for %%b in ("!CANDIDATE_JAVA!") do set "JAVA_BIN=%%~dpb"
+for %%h in ("!JAVA_BIN!..") do set "JAVA_HOME=%%~fh"
+exit /b 0
+
+:check_java_only
+call :detect_java
+if not defined JAVA_EXE goto check_java_missing
+echo [OK] Java !JAVA_MAJOR! found: !JAVA_EXE!
+echo JAVA_HOME=!JAVA_HOME!
+exit /b 0
+
+:check_java_missing
+echo [X] Java %JAVA_MIN_VERSION%+ was not found.
+exit /b 1
