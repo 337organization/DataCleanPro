@@ -51,21 +51,35 @@ public class ReportService {
             // 4. 创建表头样式
             CellStyle headerStyle = createHeaderStyle(workbook);
             
-            // 5. 写入表头
+            // 5. 写入表头（优先使用数据首行作为列名，降级为"列 N"）
             Row headerRow = sheet.createRow(0);
-            if (!rows.isEmpty() && rows.get(0).getFields() != null) {
-                for (int i = 0; i < rows.get(0).getFields().size(); i++) {
+            int columnCount = rows.isEmpty() || rows.get(0).getFields() == null ? 0 : rows.get(0).getFields().size();
+            if (dataFile.getHeaders() != null && !dataFile.getHeaders().isEmpty()) {
+                columnCount = dataFile.getHeaders().size();
+                for (int i = 0; i < columnCount; i++) {
+                    Cell cell = headerRow.createCell(i);
+                    cell.setCellValue(dataFile.getHeaders().get(i));
+                    cell.setCellStyle(headerStyle);
+                }
+            } else if (columnCount > 0) {
+                for (int i = 0; i < columnCount; i++) {
                     Cell cell = headerRow.createCell(i);
                     cell.setCellValue("列 " + (i + 1));
                     cell.setCellStyle(headerStyle);
                 }
             }
-            
+
             // 6. 写入数据
-            for (int i = 0; i < rows.size(); i++) {
+            int dataStartIndex = 0;
+            if (dataFile.getHeaders() != null && !dataFile.getHeaders().isEmpty() && !rows.isEmpty()
+                    && rows.get(0).getFields() != null && rows.get(0).getFields().equals(dataFile.getHeaders())) {
+                dataStartIndex = 1;
+            }
+            int excelRowIndex = 1;
+            for (int i = dataStartIndex; i < rows.size(); i++) {
                 DataRow row = rows.get(i);
-                Row dataRow = sheet.createRow(i + 1);
-                
+                Row dataRow = sheet.createRow(excelRowIndex++);
+
                 if (row.getFields() != null) {
                     for (int j = 0; j < row.getFields().size(); j++) {
                         Cell cell = dataRow.createCell(j);
@@ -73,12 +87,10 @@ public class ReportService {
                     }
                 }
             }
-            
+
             // 7. 自动调整列宽
-            if (!rows.isEmpty() && rows.get(0).getFields() != null) {
-                for (int i = 0; i < rows.get(0).getFields().size(); i++) {
-                    sheet.autoSizeColumn(i);
-                }
+            for (int i = 0; i < columnCount; i++) {
+                sheet.autoSizeColumn(i);
             }
             
             // 8. 保存文件

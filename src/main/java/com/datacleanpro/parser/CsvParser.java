@@ -7,9 +7,12 @@ import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
 import com.opencsv.exceptions.CsvException;
 
+import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
+import java.io.FileInputStream;
+import java.io.InputStreamReader;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -25,8 +28,13 @@ public class CsvParser extends FileParser {
     public List<DataRow> parse(File file) throws FileFormatException {
         List<DataRow> rows = new ArrayList<>();
         
-        try (FileReader fileReader = new FileReader(file);
-             CSVReader csvReader = new CSVReaderBuilder(fileReader).build()) {
+        try (BufferedReader fileReader = new BufferedReader(new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8))) {
+            fileReader.mark(1);
+            int firstChar = fileReader.read();
+            if (firstChar != 0xFEFF) {
+                fileReader.reset();
+            }
+            CSVReader csvReader = new CSVReaderBuilder(fileReader).build();
             
             LogUtil.info("开始解析CSV文件: " + file.getName());
             
@@ -48,7 +56,8 @@ public class CsvParser extends FileParser {
             }
             
             LogUtil.info("CSV文件解析完成: " + file.getName() + ", 解析行数: " + rows.size());
-            
+
+            csvReader.close();
         } catch (IOException e) {
             throw new FileFormatException("读取CSV文件失败: " + e.getMessage(), 
                                         file.getAbsolutePath(), "可读取的CSV文件", "读取失败");

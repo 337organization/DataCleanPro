@@ -185,11 +185,14 @@ public class ValidationService {
             params.put("errorMessage", rule.getErrorMessage());
         }
         if (rule.getExpression() != null) {
-            params.put("regex", rule.getExpression());
-            String[] range = rule.getExpression().split("-");
-            if (range.length == 2) {
-                params.put("min", range[0]);
-                params.put("max", range[1]);
+            if ("NUMBER_RANGE".equals(rule.getRuleType())) {
+                String[] range = rule.getExpression().split("-");
+                if (range.length == 2) {
+                    params.put("min", range[0]);
+                    params.put("max", range[1]);
+                }
+            } else {
+                params.put("regex", rule.getExpression());
             }
         }
         return ValidationEngine.createRule(rule.getRuleType(), params);

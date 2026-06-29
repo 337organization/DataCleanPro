@@ -3,6 +3,9 @@ package com.datacleanpro.dao;
 import com.datacleanpro.exception.DatabaseImportException;
 import com.datacleanpro.model.DataRow;
 import com.datacleanpro.util.LogUtil;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.type.TypeReference;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -337,53 +340,27 @@ public class DataRowDAO {
         }
     }
 
-    /**
-     * 将字段列表转换为JSON字符串
-     * @param fields 字段列表
-     * @return JSON字符串
-     */
+    private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
+
     private static String convertFieldsToJson(List<String> fields) {
-        if (fields == null || fields.isEmpty()) {
+        try {
+            return JSON_MAPPER.writeValueAsString(fields != null ? fields : new ArrayList<>());
+        } catch (JsonProcessingException e) {
+            LogUtil.error("字段序列化为JSON失败", e);
             return "[]";
         }
-        StringBuilder sb = new StringBuilder("[");
-        for (int i = 0; i < fields.size(); i++) {
-            if (i > 0) {
-                sb.append(",");
-            }
-            sb.append("\"").append(fields.get(i) != null ? fields.get(i).replace("\"", "\\\"") : "").append("\"");
-        }
-        sb.append("]");
-        return sb.toString();
     }
 
-    /**
-     * 将JSON字符串转换为字段列表
-     * @param json JSON字符串
-     * @return 字段列表
-     */
     private static List<String> convertJsonToFields(String json) {
-        List<String> fields = new ArrayList<>();
-        if (json == null || json.isEmpty() || "[]".equals(json)) {
-            return fields;
+        if (json == null || json.isEmpty()) {
+            return new ArrayList<>();
         }
-        
-        // 简单的JSON数组解析
-        json = json.trim();
-        if (json.startsWith("[") && json.endsWith("]")) {
-            json = json.substring(1, json.length() - 1);
-            if (!json.isEmpty()) {
-                String[] items = json.split(",");
-                for (String item : items) {
-                    item = item.trim();
-                    if (item.startsWith("\"") && item.endsWith("\"")) {
-                        item = item.substring(1, item.length() - 1);
-                    }
-                    fields.add(item);
-                }
-            }
+        try {
+            return JSON_MAPPER.readValue(json, new TypeReference<List<String>>() {});
+        } catch (JsonProcessingException e) {
+            LogUtil.error("JSON反序列化为字段失败", e);
+            return new ArrayList<>();
         }
-        return fields;
     }
 
     /**

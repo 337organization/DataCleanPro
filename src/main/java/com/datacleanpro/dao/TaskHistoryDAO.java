@@ -278,21 +278,46 @@ public class TaskHistoryDAO {
      */
     public static boolean deleteById(Long id) {
         String sql = "DELETE FROM task_history WHERE id = ?";
-        
+
         Connection conn = null;
         PreparedStatement stmt = null;
-        
+
         try {
             conn = DBConnection.getConnection();
             stmt = conn.prepareStatement(sql);
             stmt.setLong(1, id);
-            
+
             int affectedRows = stmt.executeUpdate();
             LogUtil.info("任务历史删除成功，ID: " + id);
             return affectedRows > 0;
         } catch (SQLException e) {
             LogUtil.error("删除任务历史失败", e);
             throw new DatabaseImportException("删除任务历史失败", e);
+        } finally {
+            closeResources(conn, stmt, null);
+        }
+    }
+
+    /**
+     * 清空所有任务历史
+     * @return 删除的行数
+     */
+    public static int deleteAll() {
+        String sql = "DELETE FROM task_history";
+
+        Connection conn = null;
+        PreparedStatement stmt = null;
+
+        try {
+            conn = DBConnection.getConnection();
+            stmt = conn.prepareStatement(sql);
+
+            int affectedRows = stmt.executeUpdate();
+            LogUtil.info("任务历史已清空，删除行数: " + affectedRows);
+            return affectedRows;
+        } catch (SQLException e) {
+            LogUtil.error("清空任务历史失败", e);
+            throw new DatabaseImportException("清空任务历史失败", e);
         } finally {
             closeResources(conn, stmt, null);
         }

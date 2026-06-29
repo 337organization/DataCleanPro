@@ -116,13 +116,7 @@ public class HistoryPanel extends JPanel {
         SwingWorker<Integer, Void> worker = new SwingWorker<>() {
             @Override
             protected Integer doInBackground() {
-                int deletedCount = 0;
-                for (TaskHistory history : TaskHistoryService.getAllHistory()) {
-                    if (history.getId() != null && TaskHistoryService.deleteHistory(history.getId())) {
-                        deletedCount++;
-                    }
-                }
-                return deletedCount;
+                return TaskHistoryService.clearAllHistory();
             }
 
             @Override

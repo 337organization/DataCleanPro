@@ -90,4 +90,12 @@ public class TaskHistoryService {
     public static boolean deleteHistory(Long id) {
         return TaskHistoryDAO.deleteById(id);
     }
+
+    /**
+     * 清空所有任务历史
+     * @return 删除的行数
+     */
+    public static int clearAllHistory() {
+        return TaskHistoryDAO.deleteAll();
+    }
 }

@@ -2,327 +2,171 @@
 
 ## 项目简介
 
-DataCleanPro 是一个基于 Java 的自动化数据处理与清洗系统，用于处理 Excel、CSV 格式的数据文件。系统提供数据导入、清洗、验证、查询、统计和导出等功能。
-
-## 功能特性
-
-### 核心功能
-- **文件导入**：支持 Excel (.xlsx, .xls) 和 CSV 文件导入
-- **数据清洗**：自动去重、空值处理、格式标准化
-- **数据验证**：支持自定义验证规则（手机号、邮箱、必填字段等）
-- **数据查询**：支持数据搜索、筛选和分页显示
-- **报表导出**：支持导出清洗后的数据到 Excel
-- **历史记录**：记录所有操作历史，支持审计追踪
-
-### 技术特性
-- **MVC 架构**：清晰的分层架构设计
-- **多线程处理**：使用 ExecutorService 实现异步任务
-- **网络编程**：支持 Socket 客户端/服务器模式
-- **连接池管理**：自定义数据库连接池
-- **日志系统**：完整的日志记录和审计功能
-
-## 技术栈
-
-- **Java 17**
-- **Maven**：项目构建和管理
-- **MySQL 8.0**：数据存储
-- **Swing**：图形用户界面
-- **Apache POI**：Excel 文件处理
-- **OpenCSV**：CSV 文件处理
-- **Jackson**：JSON 处理
-- **SLF4J + Logback**：日志框架
-
-## 项目结构
-
-```
-src/main/java/com/datacleanpro/
-├── App.java                    # 应用程序入口
-├── model/                      # 数据模型层
-│   ├── DataRow.java
-│   ├── DataFile.java
-│   ├── CleanTask.java
-│   ├── ValidationRule.java
-│   ├── ValidationResult.java
-│   ├── QueryCondition.java
-│   ├── StatResult.java
-│   └── TaskHistory.java
-├── parser/                     # 文件解析层
-│   ├── FileParser.java         # 抽象类
-│   ├── ExcelParser.java        # Excel 解析器
-│   ├── CsvParser.java          # CSV 解析器
-│   └── ParserFactory.java      # 解析器工厂
-├── cleaner/                    # 数据清洗层
-│   ├── DataCleaner.java        # 接口
-│   ├── DuplicateCleaner.java   # 去重清洗器
-│   ├── EmptyValueCleaner.java  # 空值清洗器
-│   ├── FormatCleaner.java      # 格式清洗器
-│   └── CleanPipeline.java      # 清洗管道
-├── validator/                  # 数据验证层
-│   ├── ValidateRule.java       # 接口
-│   ├── PhoneRule.java          # 手机号验证
-│   ├── EmailRule.java          # 邮箱验证
-│   ├── RequiredRule.java       # 必填验证
-│   ├── NumberRangeRule.java    # 数字范围验证
-│   ├── RegexRule.java          # 正则验证
-│   └── ValidationEngine.java   # 验证引擎
-├── service/                    # 业务逻辑层
-│   ├── DataImportService.java
-│   ├── ValidationService.java
-│   ├── DatabaseService.java
-│   ├── ReportService.java
-│   └── TaskHistoryService.java
-├── dao/                        # 数据访问层
-│   ├── DBConnection.java       # 连接池管理
-│   ├── DataFileDAO.java
-│   ├── DataRowDAO.java
-│   ├── CleanTaskDAO.java
-│   ├── ValidationRuleDAO.java
-│   ├── ValidationResultDAO.java
-│   └── TaskHistoryDAO.java
-├── controller/                 # 控制器层
-│   └── ImportController.java
-├── view/                       # 视图层
-│   ├── MainFrame.java
-│   ├── ImportPanel.java
-│   ├── CleanPanel.java
-│   ├── ValidationPanel.java
-│   ├── QueryPanel.java
-│   ├── ReportPanel.java
-│   ├── HistoryPanel.java
-│   └── StatusBar.java
-├── network/                    # 网络层
-│   ├── Server.java
-│   ├── Client.java
-│   ├── TaskRequest.java
-│   ├── TaskResponse.java
-│   ├── ProtocolUtil.java
-│   └── TaskManager.java
-├── exception/                  # 异常处理
-│   ├── DataCleanException.java
-│   ├── FileFormatException.java
-│   ├── DataValidateException.java
-│   ├── DatabaseImportException.java
-│   └── NetworkException.java
-├── util/                       # 工具类
-│   ├── LogUtil.java
-│   ├── ConfigUtil.java
-│   ├── FileUtil.java
-│   ├── DateUtil.java
-│   └── StringUtil.java
-└── config/                     # 配置类
-```
-
-## 数据库设计
-
-### 主要表结构
-
-1. **data_file** - 数据文件表
-2. **data_row** - 数据行表
-3. **clean_task** - 清洗任务表
-4. **validation_rule** - 验证规则表
-5. **validation_result** - 验证结果表
-6. **task_history** - 任务历史表
+DataCleanPro 是一个基于 Java 17 的桌面应用程序，提供 Excel/CSV 数据的导入、清洗、验证、查询、报表导出和历史审计等完整数据处理流程。
 
 ## 快速开始
 
 ### 环境要求
 
 - JDK 17+
-- Maven 3.6+
-- MySQL 8.0+
+- Maven 3.6+（也可运行 `start.bat` 自动下载）
 
-### 安装步骤
+### 安装运行
 
-1. **克隆项目**
-   ```bash
-   git clone <repository-url>
-   cd DataCleanPro
-   ```
+```bash
+# 1. 配置数据库（可选，默认自动降级为 H2 本地存储）
+#    编辑 src/main/resources/application.properties 设置 MySQL 连接
+#    MySQL 不可用时系统自动使用 H2 嵌入式数据库，无需任何配置
 
-2. **配置数据库**
-   - 创建 MySQL 数据库
-   - 执行 `src/main/resources/db/schema.sql` 创建表结构
-   - 修改 `src/main/resources/application.properties` 中的数据库配置
+# 2. 编译项目
+mvn clean compile
 
-3. **编译项目**
-   ```bash
-   mvn clean compile
-   ```
+# 3. 运行项目
+mvn exec:java -Dexec.mainClass="com.datacleanpro.App"
 
-4. **运行项目**
-   ```bash
-   mvn exec:java -Dexec.mainClass="com.datacleanpro.App"
-   ```
+# 4. 或直接运行启动脚本（自动检测环境）
+start.bat
+```
 
 ### 数据库配置
 
-在 `application.properties` 中配置数据库连接：
-
 ```properties
-db.url=jdbc:mysql://localhost:3306/datacleanpro?useSSL=false&serverTimezone=Asia/Shanghai
+db.url=jdbc:mysql://localhost:3306/datacleanpro?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
 db.username=root
-db.password=root
+db.password=your_password
 db.driver=com.mysql.cj.jdbc.Driver
 ```
 
-## 测试文件
+> **提示**：MySQL 不可用时系统自动切换 H2 嵌入式数据库（`storage/local/`），所有功能正常使用。
 
-项目提供了多种测试文件，位于 `src/main/resources/test/` 目录：
+## 技术栈
 
-| 文件名 | 类型 | 说明 |
-|--------|------|------|
-| employees.csv | CSV | 员工数据，测试基本导入 |
-| customers.xlsx | Excel | 客户数据，测试Excel导入 |
-| products.csv | CSV | 产品数据，测试不同列结构 |
-| dirty_data.csv | CSV | 脏数据，测试格式清洗 |
-| empty_fields.csv | CSV | 空值数据，测试空值处理 |
-| duplicate_data.csv | CSV | 重复数据，测试去重功能 |
-| invalid_phone.csv | CSV | 错误手机号，测试验证 |
-| invalid_email.csv | CSV | 错误邮箱，测试验证 |
-| missing_required.csv | CSV | 缺少必填字段，测试验证 |
-| large_data.csv | CSV | 1000行数据，测试性能 |
-
-## 课程设计文档
-
-项目包含完整的课程设计文档：
-
-| 文档 | 说明 |
+| 类别 | 技术 |
 |------|------|
-| 课程设计报告.docx | 完整的课程设计报告 |
-| 组员任务分工说明.docx | 4人团队任务分工 |
-| 组员报告-张三.docx | 项目组长/后端开发报告 |
-| 组员报告-李四.docx | 后端开发/数据库设计报告 |
-| 组员报告-王五.docx | 前端开发/GUI设计报告 |
-| 组员报告-赵六.docx | 测试/文档编写报告 |
+| 语言 | Java 17 |
+| 构建 | Maven |
+| 数据库 | MySQL 8.0+ / H2（回退） |
+| GUI | Swing |
+| Excel | Apache POI 5.2.5 |
+| CSV | OpenCSV 5.9 |
+| JSON | Jackson 2.16.1 |
+| 日志 | SLF4J + Logback |
 
-## 使用说明
+## 功能特性
 
-### 1. 数据导入
-- 点击"选择文件"按钮选择 Excel 或 CSV 文件
-- 点击"导入数据"按钮开始导入
-- 系统自动解析文件并显示数据预览
+### 核心功能
 
-### 2. 数据清洗
-- 选择需要清洗的数据文件
-- 选择清洗类型（去重、空值处理、格式化）
-- 点击执行清洗操作
+- **文件导入**：支持 `.xlsx` / `.xls` / `.csv`，自动识别文件格式
+- **数据清洗**：去重、空值填充、格式标准化（去空格/大小写/特殊字符）
+- **数据验证**：手机号、邮箱、必填字段、数字范围、正则表达式规则
+- **数据查询**：按文件筛选、关键字搜索、分页展示
+- **报表导出**：导出数据或历史记录为 Excel 文件，保存至 `storage/reports/`
+- **历史审计**：所有操作自动记录，支持查看、清空、导出
 
-### 3. 数据验证
-- 配置验证规则（手机号、邮箱、必填字段等）
-- 选择需要验证的数据文件
-- 执行验证并查看结果
+### 技术特性
 
-### 4. 数据查询
-- 使用搜索框搜索数据
-- 支持按文件、列、关键字筛选
-- 支持分页显示
+- **MVC 架构**：`model` / `view` / `controller` / `service` / `dao` 分层清晰
+- **异步处理**：`SwingWorker` + `ExecutorService` 线程池，GUI 不阻塞
+- **网络通信**：Socket 服务器/客户端，Jackson JSON 序列化
+- **连接池**：自定义 `BlockingQueue` 连接池，支持事务管理
+- **异常体系**：5 种自定义异常，覆盖文件、数据库、网络、验证等场景
+- **日志审计**：SLF4J + Logback，控制台/文件/审计日志三级输出
 
-### 5. 报表导出
-- 选择需要导出的数据
-- 点击导出按钮生成 Excel 报表
-- 报表保存在 `storage/reports/` 目录
+## 项目结构
 
-## 项目亮点
+```text
+src/main/java/com/datacleanpro/
+├── App.java                    # 入口：初始化DB、启动Server、加载GUI
+├── model/                      # 数据模型（8个POJO）
+├── parser/                     # 文件解析（抽象类 + Excel/CSV实现 + 工厂）
+├── cleaner/                    # 数据清洗（接口 + 去重/空值/格式 + 管道）
+├── validator/                  # 数据验证（接口 + 5种规则 + 引擎）
+├── service/                    # 业务逻辑（5个Service）
+├── dao/                        # 数据访问（连接池 + 6个DAO）
+├── controller/                 # 控制器
+├── view/                       # Swing视图（主窗口 + 6面板 + 状态栏）
+├── network/                    # 网络层（Server/Client/协议/任务管理）
+├── exception/                  # 异常（5种层次化异常）
+└── util/                       # 工具类（配置/文件/字符串/日期/日志）
+```
 
-1. **完整的 OOP 设计**
-   - 继承：FileParser 抽象类和子类
-   - 接口：DataCleaner、ValidateRule 接口
-   - 多态：解析器工厂模式
+## 数据库设计
 
-2. **异步任务处理**
-   - 使用 ExecutorService 线程池
-   - SwingWorker 实现 GUI 异步操作
-   - 进度条显示任务进度
+| 表名 | 说明 | 核心字段 |
+|------|------|----------|
+| `data_file` | 导入的文件元数据 | id, file_name, file_type, row_count, status |
+| `data_row` | 数据行（JSON存储） | id, file_id, row_index, row_data, is_deleted |
+| `clean_task` | 清洗任务记录 | id, file_id, task_type, status, rows_affected |
+| `validation_rule` | 验证规则定义 | id, rule_type, target_column, expression, is_active |
+| `validation_result` | 验证结果明细 | id, file_id, rule_id, row_index, cell_value, is_passed |
+| `task_history` | 操作审计日志 | id, action, target, status, execution_time |
 
-3. **网络编程**
-   - Socket 客户端/服务器模式
-   - JSON 序列化通信
-   - 支持远程任务处理
+### 默认验证规则（系统初始化时自动插入）
 
-4. **连接池管理**
-   - 自定义数据库连接池
-   - 连接复用和回收
-   - 事务管理支持
+| 规则名 | 类型 | 目标列 | 说明 |
+|--------|------|--------|------|
+| 手机号格式 | PHONE | phone | `^1[3-9]\d{9}$` |
+| 邮箱格式 | EMAIL | email | 标准邮箱正则 |
+| 必填字段 | REQUIRED | - | 非空校验 |
+| 年龄范围 | NUMBER_RANGE | age | 0-150 |
 
-5. **完整的日志系统**
-   - SLF4J + Logback 日志框架
-   - 审计日志记录
-   - 日志文件滚动和归档
+## 测试数据
 
-## 答辩说明
+位于 `src/main/resources/test/`，覆盖各类场景：
 
-### 技术要点
+| 文件 | 测试点 |
+|------|--------|
+| `employees.csv` | 15行标准员工数据，基础导入 |
+| `customers.xlsx` | Excel格式导入兼容性 |
+| `dirty_data.csv` | 前后空格、大小写不统一 |
+| `empty_fields.csv` | 空值/缺失字段处理 |
+| `duplicate_data.csv` | 重复行（21行含6组重复） |
+| `invalid_phone.csv` | 手机号验证规则测试 |
+| `invalid_email.csv` | 邮箱验证规则测试 |
+| `missing_required.csv` | 必填字段缺失测试 |
+| `large_data.csv` | 1000行数据，性能测试 |
 
-1. **Java 类继承**
-   - FileParser 抽象类
-   - ExcelParser 和 CsvParser 子类
+## OOP 设计亮点
 
-2. **Java 接口**
-   - DataCleaner 接口及其实现类
-   - ValidateRule 接口及其实现类
+| 特性 | 实现 | 说明 |
+|------|------|------|
+| **继承** | `FileParser` → `ExcelParser` / `CsvParser` | 抽象类定义解析骨架 |
+| **接口** | `DataCleaner` / `ValidateRule` | 定义清洗/验证契约 |
+| **多态** | `ParserFactory` / `CleanPipeline` | 工厂模式 + 管道模式 |
+| **异常体系** | `DataCleanException` → 4个子类 | 层次化异常处理 |
+| **异步** | `SwingWorker` + `ExecutorService` | GUI异步不阻塞 |
+| **网络** | Socket + Jackson JSON | C/S通信模式 |
 
-3. **Java 多态**
-   - ParserFactory 工厂模式
-   - CleanPipeline 管道模式
+## 测试指南
 
-4. **Java 图形界面**
-   - Swing 组件
-   - 卡片布局
-   - JTable 数据展示
+```bash
+# 编译
+mvn compile
 
-5. **Java 多线程**
-   - ExecutorService 线程池
-   - SwingWorker 异步任务
-   - 后台任务处理
+# 打包
+mvn package -DskipTests
 
-6. **Java 网络编程**
-   - Socket 通信
-   - 客户端/服务器模式
-   - JSON 数据交换
+# 运行 JAR
+java -jar target/DataCleanPro-1.0-SNAPSHOT.jar
 
-7. **文件永久化存储**
-   - 上传文件存储
-   - 导出报表存储
-   - 日志文件存储
+# 启动脚本（推荐，自动检测环境）
+start.bat
+```
 
-8. **自定义异常处理**
-   - FileFormatException
-   - DataValidateException
-   - DatabaseImportException
-   - NetworkException
+启动脚本 `start.bat` 支持：
 
-### 演示流程
-
-1. **启动应用程序**
-2. **导入示例数据文件**
-3. **执行数据清洗**
-4. **配置验证规则并验证**
-5. **查询和筛选数据**
-6. **导出报表**
-7. **查看历史记录**
-8. **网络功能演示**
+```bash
+start.bat              # 检测环境 → 编译 → 运行
+start.bat --stop       # 停止 DataCleanPro 进程
+start.bat --uninstall  # 清除 Maven 缓存和 target
+start.bat --version    # 显示版本
+```
 
 ## 常见问题
 
-### 1. 数据库连接失败
-- 检查 MySQL 服务是否启动
-- 验证数据库配置是否正确
-- 确认数据库用户权限
-
-### 2. 文件导入失败
-- 检查文件格式是否支持
-- 确认文件编码是否正确
-- 查看日志文件获取详细错误信息
-
-### 3. 导出报表失败
-- 检查存储目录权限
-- 确认磁盘空间是否充足
-- 查看日志文件获取详细错误信息
-
-## 开发团队
-
-DataCleanPro 开发团队
-
-## 许可证
-
-本项目仅供学习和研究使用。
+| 问题 | 解决方法 |
+|------|----------|
+| 数据库连接失败 | 检查 MySQL 服务；系统会自动降级 H2 本地存储 |
+| 文件导入失败 | 仅支持 `.xlsx` / `.xls` / `.csv`，确认 UTF-8 编码 |
+| 导出报表失败 | 检查 `storage/reports/` 目录权限 |
+| 查看详细日志 | `storage/logs/datacleanpro.log` 或 `storage/logs/audit.log` |

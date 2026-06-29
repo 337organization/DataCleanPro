@@ -17,15 +17,6 @@ public class NetworkException extends DataCleanException {
         super("NETWORK_ERROR", message, cause);
     }
 
-    public NetworkException(String host, int port, String operation, String message) {
-        super("NETWORK_ERROR", 
-              String.format("网络操作失败: %s %s:%d, 原因: %s", 
-                          operation, host, port, message));
-        this.host = host;
-        this.port = port;
-        this.operation = operation;
-    }
-
     public NetworkException(String message, String host, int port, String operation) {
         super("NETWORK_ERROR", message);
         this.host = host;

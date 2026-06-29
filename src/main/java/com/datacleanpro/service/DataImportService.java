@@ -20,6 +20,7 @@ import com.datacleanpro.util.LogUtil;
 
 import java.io.File;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -75,13 +76,16 @@ public class DataImportService {
             dataFile.setFileType(FileUtil.getFileExtension(file));
             dataFile.setRowCount(parseResult.getRowCount());
             dataFile.setColumnCount(parseResult.getRows().isEmpty() ? 0 : parseResult.getRows().get(0).getFieldCount());
+            List<DataRow> rows = parseResult.getRows();
+            if (!rows.isEmpty() && rows.get(0).getFields() != null) {
+                dataFile.setHeaders(new ArrayList<>(rows.get(0).getFields()));
+            }
             dataFile.setStatus("IMPORTED");
             
             Long fileId = DataFileDAO.insert(dataFile);
             dataFile.setId(fileId);
             
             // 4. 保存数据行
-            List<DataRow> rows = parseResult.getRows();
             for (DataRow row : rows) {
                 row.setFileId(fileId);
             }
